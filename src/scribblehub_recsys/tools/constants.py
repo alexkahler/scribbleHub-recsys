@@ -1,3 +1,6 @@
+"""Novel constants for Genres and Tags.
+"""
+
 GENRES = [
         "Action",
         "Adult",

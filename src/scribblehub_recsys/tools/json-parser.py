@@ -1,7 +1,8 @@
 """Small python script to parse json strings and output them as a CSV. Deprecated.
 """
-import pandas as pd
 import json
+
+import pandas as pd
 
 filename = input("Type the filename which you want to parse:")
 column = input("Type the column which contains json string:")

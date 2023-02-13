@@ -2,7 +2,6 @@ from ast import literal_eval
 import logging
 import pickle
 
-from scipy import sparse as sp
 import pandas as pd
 import numpy as np
 import zstandard
@@ -54,9 +53,11 @@ def filter_short_novels(novels_df):
     
     return novels_df[novels_df.chapters > 5].reset_index(drop=True)
 
-# Credit to datacamp.com/tutorial/recommender-systems-python
+
 def weighted_rating(df, mean_rating, quantile_votes):
     """Calculate weighted rating based on IMDB's rating formula.
+    
+    Credit to datacamp.com/tutorial/recommender-systems-python
     
     Args:
         param1: Pandas DataFrame.
@@ -82,7 +83,6 @@ def parse_tags(novels_df, features):
     
     for feature in features:
         novels_df[feature] = novels_df[feature].apply(literal_eval)
-        # novels_df[feature] = novels_df[feature].apply(convert_json_tags, args=(feature, ))
 
     return novels_df
 
@@ -108,6 +108,8 @@ def filter_library_size(df, user_id_min, novel_id_min):
     """Filter the reading list dataframe based on the minimum number of novels added to 
     the reading list and users who have not added the minimum amount of books.
 
+    Credit to https://www.ethanrosenthal.com/2016/10/19/implicit-mf-part-1/
+    
     Args:
         df (Pandas Dataframe): DataFrame of reading list.
         user_id_min (_type_): User's minimum novel amount.
@@ -160,6 +162,7 @@ def process_recommendation(
     reading_lists):
     
     results = {}
+    
     for i in range(0, len(recommendations)):
         results[index_to_novel[recommendations[i]]] = [reading_lists.loc[reading_lists["novel_id"]==index_to_novel[recommendations[i]], "novel"].iloc[0], scores[i], np.in1d(recommendations[i], data[user_to_index[user_id]].indices)]
 
@@ -176,6 +179,7 @@ def process_simillar_items(
     index_to_novel):
     
     results = {}
+    
     for i in range(0, len(recommendations)):
         results[index_to_novel[recommendations[i]]] = [reading_lists.loc[reading_lists["novel_id"]==index_to_novel[recommendations[i]], "novel"].iloc[0], scores[i], np.in1d(recommendations[i], data[user_to_index[user_id]].indices)]
 
@@ -183,26 +187,8 @@ def process_simillar_items(
     return pd.DataFrame.from_dict(results, orient='index', columns=["novel", "score", "viewed"])
 
 
-def create_index_mappings(df, column):
-    
-    idx_user = pd.Series(np.sort(np.unique(df[column])))
-    user_idx = pd.Series(data=idx_user.index, index=idx_user.values)
-    return idx_user, user_idx
-
-
-def create_csr_matrix(df, user_idx, novel_idx):
-    
-    rows = df["user_id"].map(user_idx)
-    cols = df["novel_id"].map(novel_idx)
-    values = np.ones(rows.shape[0])
-    #Format the data into CSR Matrix for the model.
-    # Create a user-item matrix from the dataframe
-    #data = sp.coo_matrix((np.ones(len(reading_lists.user_id)), (reading_lists['user_id'], reading_lists['novel_id']))).tocsr()
-    #data = [tuple(x) for x in reading_lists[['user_id', 'novel_id']].to_records(index=False)]
-    return sp.csr_matrix((values, (rows, cols)),shape=(df.user_id.unique().shape[0], df.novel_id.unique().shape[0]))
-
-
 def compress_pickle(obj, file_path):
+    
     binary_data = pickle.dumps(obj)
     compressed_data = zstandard.compress(binary_data)
     with open(file_path, "wb") as f:
@@ -210,6 +196,7 @@ def compress_pickle(obj, file_path):
 
 
 def decompress_unpickle(file_path):
+    
     with open(file_path, "rb") as f:
         compressed_data = f.read()
     binary_data = zstandard.decompress(compressed_data)

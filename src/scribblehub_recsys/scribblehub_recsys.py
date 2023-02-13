@@ -1,18 +1,15 @@
-import os
-
 from _engines import cf_engine, cb_engine
 from tools import utility, constants
-
-path = r"C:\\Users\\akaehler\\OneDrive - GN Store Nord\Documents\ScribbleHub\ScribbleHub RecSys\\models\\"
 
 #TODO Clean up code structure to allow for better maintanence and export of models and dataframes for use with Streamlit app.
 #TODO: Create CLI interface which uses both CB and CF recommender engines.
 def cf_recommendation():
-    load_model = True
-    save_model = False
-    load_mappings = True
+    
+    user_id, novel_id, top_n = 17062, 124643, 10
+    load_model = False
+    save_model = True
     save_mappings = False
-    train_model = False
+    train_model = True
     do_grid_search = False
     do_recommendation = True
     
@@ -21,47 +18,33 @@ def cf_recommendation():
     #Cut off any users with less than 5 books in library, or any books with less than 5 readers.
     reading_lists = utility.filter_library_size(reading_lists, 5, 5).reset_index()
     
-    if load_mappings:
-        mappings = utility.decompress_unpickle("./models/mappings.zst")
-        data = mappings.get('data')
-        index_to_novel = mappings.get('index_to_novel')
-        novel_to_index = mappings.get('novel_to_index')
-        user_to_index = mappings.get('user_to_index')
-        
-    else:
-        _, user_to_index = utility.create_index_mappings(reading_lists, "user_id")
-        index_to_novel, novel_to_index = utility.create_index_mappings(reading_lists, "novel_id")
-        data = utility.create_csr_matrix(reading_lists, user_to_index, novel_to_index)    
-
     cf_recommender = cf_engine.CFRecommender(alpha=10, regularization=10, factors=80, iterations=16)
+    mappings = cf_recommender.create_mappings(reading_lists)
     
     if load_model:
-        cf_recommender = cf_recommender.load(os.path.join(path, "implicit_model.npz"))
+        cf_recommender = cf_recommender.load("./models/implicit_model.npz")
         
-    else:
-        if train_model:
-            cf_recommender.fit(data)
+    if train_model:
+        cf_recommender.fit()
+    
+    elif do_grid_search:
+        param_grid = {
+            'factors': [40, 60, 80, 100, 120], #The overall weight given to user's rating to an item. Must not be 0.
+            'regularization': [1, 5, 10, 15, 20, 25], #regularization discourages learning a more complex or flexible model, so as to avoid the risk of overfitting.
+            'alpha': [5, 10, 15, 20, 25]}
         
-        elif do_grid_search:
-            cf_recommender.grid_search(data)
+        cf_recommender.grid_search(param_grid=param_grid)
             
-        if save_model:
-            cf_recommender.save(os.path.join(path, "implicit_model"))
+    if save_model:
+        cf_recommender.save("./models/implicit_model")
     
     if save_mappings: # TODO: Save all mappings, model and csr matrix in one dict. Save with pickle and zstd compression.
-        utility.compress_pickle(
-            {'data': data, 
-             'user_to_index': user_to_index,
-             'novel_to_index': novel_to_index,
-             'index_to_novel': index_to_novel},
-            "./models/mappings.zst")
+        utility.compress_pickle(mappings, "./models/mappings.zst")
             
     if do_recommendation:
-        user_id, novel_id, top_n = 17062, 124643, 10
         # Get recommendations for a specific user    
         recommendations, scores = cf_recommender.recommend(
-            user_to_index[user_id], 
-            data[user_to_index[user_id]],
+            user_id, 
             N=top_n, 
             filter_already_liked_items=True)
         
@@ -72,14 +55,14 @@ def cf_recommendation():
             user_id=user_id, 
             recommendations=recommendations, 
             scores=scores, 
-            data=data, 
-            user_to_index=user_to_index, 
-            index_to_novel=index_to_novel, 
+            data=cf_recommender.data, 
+            user_to_index=cf_recommender.user_to_index, 
+            index_to_novel=cf_recommender.index_to_novel, 
             reading_lists=reading_lists))
         
         # Get similar item
         recommendations, scores = cf_recommender.similar_items(
-            novel_to_index[novel_id], 
+            novel_id, 
             N=top_n)
         
         print("Getting novels similar to {}:".format(
@@ -90,10 +73,10 @@ def cf_recommendation():
             user_id=user_id, 
             recommendations=recommendations, 
             scores=scores, 
-            data=data, 
+            data=cf_recommender.data, 
             reading_lists=reading_lists, 
-            user_to_index=user_to_index, 
-            index_to_novel=index_to_novel))
+            user_to_index=cf_recommender.user_to_index, 
+            index_to_novel=cf_recommender.index_to_novel))
         
         cf_recommender.print_hyperparameters()
 
@@ -209,9 +192,9 @@ def export_novels_for_streamlit():
     
 
 if __name__ == "__main__":
-    n_export = True
+    n_export = False
     cb_rec = False
-    cf_rec = False
+    cf_rec = True
     if n_export:
         export_novels_for_streamlit()
     if cb_rec:
