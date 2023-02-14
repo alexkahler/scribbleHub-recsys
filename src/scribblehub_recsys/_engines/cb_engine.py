@@ -36,7 +36,6 @@ class CBRecommender():
         
         return ' '.join(df['tags']) + ' ' + ' ' + str(df['author']) + ' ' + ' '.join(df['fandom_tags'])
 
-    #TODO: Remove all chapters under X from recommendations.
     def recommend(self, novel_id, N, matrix, indices, novels_df):
         """Generate a recommendation.
 
@@ -68,7 +67,7 @@ class CBRecommender():
         
         print(df[['novel_id', 'title', 'rating_votes', 'weighted_rating']].head(20))
 
-    # TODO
+    # TODO Figure out how to evaluate a CB Engine?
     def evaluate_engine(self):
         """Not implemented.
         

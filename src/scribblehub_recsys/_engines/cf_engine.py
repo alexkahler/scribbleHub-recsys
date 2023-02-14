@@ -134,10 +134,15 @@ class CFRecommender(AlternatingLeastSquares):
         return this_model, model_precision, model_map, model_ndcg
 
 
-    def _grid_search_learning_curve(self, train, test, param_grid,
-                                user_index=None, epochs=range(2, 40, 2)):
-        """
-        Do a grid search of the specified hyper-parameters.
+    def _grid_search_learning_curve(
+        self,
+        train,
+        test,
+        param_grid,
+        user_index=None,
+        epochs=range(2, 40, 2)
+        ):
+        """Do a grid search of the specified hyper-parameters.
         
         Credit: https://www.ethanrosenthal.com/2016/10/19/implicit-mf-part-1/
         """

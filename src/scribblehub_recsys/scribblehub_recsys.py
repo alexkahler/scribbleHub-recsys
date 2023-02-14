@@ -38,7 +38,7 @@ def cf_recommendation():
     if save_model:
         cf_recommender.save("./models/implicit_model")
     
-    if save_mappings: # TODO: Save all mappings, model and csr matrix in one dict. Save with pickle and zstd compression.
+    if save_mappings:
         utility.compress_pickle(mappings, "./models/mappings.zst")
             
     if do_recommendation:
@@ -87,7 +87,7 @@ def cb_recommendation(
     do_ranking: bool = True):
     
     novels_df = utility.load_data('novels')
-    novels_df = utility.filter_short_novels(novels_df)
+    novels_df = utility.filter_short_novels(novels_df, 5)
     # print(novels_df['novel_id'].iloc[:10])
     cb_recommender = cb_engine.CBRecommender(novels_df)
     similarity_matrix, indices = cb_recommender.fit(novels_df)
@@ -125,7 +125,7 @@ def export_novels_for_streamlit():
         'novel_href': str,
         'novel_id': np.int32,
         'pages': np.int32,
-        'rating': np.float32,
+        'rating': float,
         'rating_votes': np.int16,
         'readers': np.int16,
         'reviews_count': np.int16,
@@ -160,12 +160,12 @@ def export_novels_for_streamlit():
     novels_df['weighted_rating'] = novels_df.apply(
         utility.weighted_rating, 
         args=(mean_rating, quantile_votes,),
-        axis=1)
+        axis=1).astype(float)
     
     novels_df['status'] = novels_df['status'].str.strip().astype('category')
     
     novels_df.drop(
-        ['rating', 'author_href', 'novel_href'],
+        ['author_href', 'novel_href'],
         axis=1,
         inplace=True)
     novels_df = novels_df.drop_duplicates('novel_id').reset_index()
@@ -192,9 +192,9 @@ def export_novels_for_streamlit():
     
 
 if __name__ == "__main__":
-    n_export = False
+    n_export = True
     cb_rec = False
-    cf_rec = True
+    cf_rec = False
     if n_export:
         export_novels_for_streamlit()
     if cb_rec:

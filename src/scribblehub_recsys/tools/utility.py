@@ -7,7 +7,7 @@ import numpy as np
 import zstandard
 
 
-def load_data(dataset):
+def load_data(dataset: str):
     """Load data from file.
 
     Returns:
@@ -46,23 +46,23 @@ def load_data(dataset):
     return df
 
 
-def filter_short_novels(novels_df):
+def filter_short_novels(novels_df: pd.DataFrame, min_chapter_amount: int = 5):
     """Drop all novels with less than 5 chapters.
     
     """
     
-    return novels_df[novels_df.chapters > 5].reset_index(drop=True)
+    return novels_df[novels_df.chapters > min_chapter_amount].reset_index(drop=True)
 
 
-def weighted_rating(df, mean_rating, quantile_votes):
+def weighted_rating(df: pd.DataFrame, mean_rating: float, quantile_votes: int):
     """Calculate weighted rating based on IMDB's rating formula.
     
     Credit to datacamp.com/tutorial/recommender-systems-python
     
     Args:
-        param1: Pandas DataFrame.
-        param2: Mean rating of the votes.
-        param3: The number of votes in the 90th quantile.
+        df: Pandas DataFrame.
+        mean_rating: Mean rating of the votes.
+        quantile_votes: The number of votes in the 90th quantile.
     
     Returns:
         int: The weighted rating.
@@ -73,7 +73,7 @@ def weighted_rating(df, mean_rating, quantile_votes):
     return ((vote_count / (vote_count + quantile_votes) * rating) +
             (quantile_votes / (quantile_votes + vote_count) * mean_rating)) 
 
-def parse_tags(novels_df, features):
+def parse_tags(novels_df: pd.DataFrame, features: list):
     """Convert the JSON formatted tags, genres, fandom_tags into a list of strings.
     
     """
@@ -87,7 +87,7 @@ def parse_tags(novels_df, features):
     return novels_df
 
 
-def convert_json_tags(json, key):
+def convert_json_tags(json: list, key: str):
     """Convert JSON object into a list of strings
 
     Args:
@@ -104,19 +104,19 @@ def convert_json_tags(json, key):
     return []
 
 
-def filter_library_size(df, user_id_min, novel_id_min):
+def filter_library_size(df: pd.DataFrame, user_id_min: int, novel_id_min: int):
     """Filter the reading list dataframe based on the minimum number of novels added to 
     the reading list and users who have not added the minimum amount of books.
 
     Credit to https://www.ethanrosenthal.com/2016/10/19/implicit-mf-part-1/
     
     Args:
-        df (Pandas Dataframe): DataFrame of reading list.
+        df (Pandas DataFrame): DataFrame of reading list.
         user_id_min (_type_): User's minimum novel amount.
         novel_id_min (_type_): Novel's minimum number of users.
 
     Returns:
-        _type_: _description_
+        Pandas DataFrame: Filtered reading lists.
     """
     n_users = df.user_id.unique().shape[0]
     n_items = df.novel_id.unique().shape[0]

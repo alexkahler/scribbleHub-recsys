@@ -1,4 +1,4 @@
-"""Novel constants for Genres and Tags.
+"""Novel constants for Genres and Tags. Used for checking unwanted genres or tags that snuck into the crawled dataset.
 """
 
 GENRES = [
